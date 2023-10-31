@@ -62,7 +62,7 @@ function updateLoadingProgress(progress) {
   let progressElement = document.getElementById('loadingProgress').firstElementChild;
   progressElement.style.transform = `scaleX(${progress})`;
   const textElement = document.getElementById('loadingText');
-  textElement.innerText = `탐색 공간 입장 중... ${Math.round(progress * 100)}%`;
+  textElement.innerText = `탐색 공간 입장 중... ${Math.round(progress * 100)-1}%`;
 }
 
 function setup() {
@@ -81,6 +81,13 @@ function setup() {
 
   for (let i = 1; i <= numAdditionalImages; i++) {
     let img = additionalImages[i];
+
+    let averageColor;
+    if (img) {
+      let color = getAverageColor(img);
+      averageColor = color ? color : null;
+    }
+
     let w = img.width * scaleFactor;
     let h = img.height * scaleFactor;
 
@@ -97,6 +104,7 @@ function setup() {
     let oscillationDirection = random([-0.01, 0.01]);
     
     rects.push({
+      averageColor: averageColor,
       body: rect,
       img: img,
       oscSpeed: oscillationSpeed,
@@ -160,6 +168,17 @@ function draw() {
       push();
       translate(pos.x, pos.y);
       rotate(angle);
+
+      // 테두리 그리기
+      if (r.averageColor) {
+        stroke(r.averageColor);
+        strokeWeight(10); // 원하는 테두리 두께로 조정하세요
+        noFill();
+        rectMode(CENTER);
+        rect(0, 0, w, h); // 여백을 위해 +10 추가 (원하는대로 조정 가능)
+      }
+
+
       imageMode(CENTER);
       image(r.img, 0, 0, w, h);
       let oscillation = sin(frameCount * r.oscSpeed) * r.oscDirection * 10; // 10은 움직임의 크기입니다. 원하는대로 조절할 수 있습니다.
@@ -226,6 +245,51 @@ function mouseDragged() {
     offsetY = startOffsetY + (mouseY - startDragY);
   }
 }
+
+function getAverageColor(img) {
+  img.loadPixels();
+
+  let colorHistogram = {};
+
+  for (let i = 0; i < img.pixels.length; i += 4) {
+    let r = img.pixels[i];
+    let g = img.pixels[i + 1];
+    let b = img.pixels[i + 2];
+    let alpha = img.pixels[i + 3];
+
+    if (alpha > 125) { // 투명도가 낮은 픽셀을 건너뛴다.
+      let colorString = `${r}-${g}-${b}`;
+
+      if (colorHistogram[colorString]) {
+        colorHistogram[colorString]++;
+      } else {
+        colorHistogram[colorString] = 1;
+      }
+    }
+  }
+
+  // histogram의 키를 빈도수 기준으로 정렬하여 상위 세 개의 색상을 얻는다.
+  let sortedColors = Object.keys(colorHistogram).sort((a, b) => colorHistogram[b] - colorHistogram[a]).slice(0, 3);
+
+  let rTotal = 0;
+  let gTotal = 0;
+  let bTotal = 0;
+
+  // 상위 세 개의 색상의 평균을 계산한다.
+  for (let colorString of sortedColors) {
+    let parts = colorString.split('-').map(val => parseInt(val));
+    rTotal += parts[0];
+    gTotal += parts[1];
+    bTotal += parts[2];
+  }
+
+  let avgR = rTotal / 3;
+  let avgG = gTotal / 3;
+  let avgB = bTotal / 3;
+
+  return color(avgR, avgG, avgB);
+}
+
 
 function calculateDisplayDimensions() {
   let imgRatio = imgSequence[1].width / imgSequence[1].height;
