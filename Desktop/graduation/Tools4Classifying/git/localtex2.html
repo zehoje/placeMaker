@@ -4,21 +4,30 @@
     <meta charset="UTF-8">
     <title>local texture</title>
     <link rel="stylesheet" type="text/css" href="cssReset.css">
-    <link rel="stylesheet" type="text/css" href="styles2.css">
+    <link rel="stylesheet" type="text/css" href="styles3.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.8.0/p5.min.js"></script>
     <script src="matter.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/color-thief/2.3.0/color-thief.umd.js"></script>
+        <script type="importmap">
+        {
+            "imports": {
+                "three": "./three.module.js",
+                "three/addons/": "/jsm/"
+            }
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/20.0.0/tween.umd.js"></script>    
 </head>
 <body>
-    <div id="loadingScreen">
-        <div id="loadingProgress">
-            <div></div> <!-- 이 div가 progressElement로 사용됩니다. -->
-        </div>
-        <p id="loadingText">탐색 공간 입장 중...</p>
-    </div>
-        
+    <button id="plane"><img src="./sources/icon/plane.png" alt="버튼 이미지" class="image-button"></button>
+    <button id="horizontal"><img src="./sources/icon/horizontal.png" alt="버튼 이미지" class="image-button"></button>
+    <button id="vertical"><img src="./sources/icon/vertical.png" alt="버튼 이미지" class="image-button"></button>
+    <button id="long"><img src="./sources/icon/long.png" alt="버튼 이미지" class="image-button"></button>
 
-    <script src="script2.js"></script>
+
+
+    <script src="script4.js" type="module"></script>
+
 
 </body>
 </html>
