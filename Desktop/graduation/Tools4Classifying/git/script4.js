@@ -8,18 +8,16 @@ import { OutlinePass } from './OutlinePass.js';
 
 
 // Configuration and state variables
-let camera, scene, renderer, stats, controls, material;
+let camera, scene, renderer, controls;
 let composer, outlinePass;
-let windowHalfX = window.innerWidth / 2;
-let windowHalfY = window.innerHeight / 2;
-const baseSize = 50;
-const sizeAmplitude = 0;
 const imageFiles = [];
-for (let i = 1; i <= 400; i++) {
+for (let i = 1; i <= 29*21; i++) {
     imageFiles.push(`./sources/additional/hongdae (${i}).jpg`);
 }
 
 const colorThief = new ColorThief();
+
+let circleRadius = 4.5;
 
 let imgSpriteXpos = 1;
 let imgSpriteZpos = 5;
@@ -27,197 +25,37 @@ const circleSprites = [];
 const imgSprites = [];
 const lineSprites = [];
 
-let imgScale = 1;
+
+let imgScale = 3;
 
 
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
-let INTERSECTED; // This will keep track of the currently intersected object
-let scaleFactor = 2;
 
 const scaleUpDuration = 150;
 const scaleDownDuration = 6000;
 
-let originalPosition = new THREE.Vector3();
-let originalQuaternion = new THREE.Quaternion();
+let originalPositions = new Map();
+
+
+
+
+init();
+
 
 function ranNum(min, max) {
     return Math.random() * (max - min) + min;
 }
 
-document.getElementById('plane').addEventListener('click', () => {
-    // 현재 rotation 값을 새 객체에 저장
-    const durationTime = 3000
-    const rotationX = { x: scene.rotation.x };
-    const rotationY = { y: scene.rotation.y };
-    const positionY = { y: scene.position.y };
-
-    const currentPos = { z: imgSpriteZpos };
-
-    new TWEEN.Tween(rotationX)
-        .to({ x: 0 }, durationTime) 
-        .easing(TWEEN.Easing.Quadratic.Out)
-        .onUpdate(() => {
-            scene.rotation.x = rotationX.x;
-        })
-        .start();
-    new TWEEN.Tween(rotationY)
-        .to({ y: 0 }, durationTime) 
-        .easing(TWEEN.Easing.Quadratic.Out)
-        .onUpdate(() => {
-            scene.rotation.y = rotationY.y;
-        })
-        .start();
-    new TWEEN.Tween(positionY)
-        .to({ y: 0 }, durationTime)
-        .easing(TWEEN.Easing.Quadratic.Out) 
-        .onUpdate(() => {
-            scene.position.y = positionY.y;
-        })
-        .start(); //
-
-    new TWEEN.Tween(currentPos)
-        .to({ z: 5}, durationTime)
-        .easing(TWEEN.Easing.Quadratic.Out)
-        .onUpdate(() => {
-            imgSpriteZpos = currentPos.z;
-            updateSprites();
-        })
-        .start(); // 애니메이션 시작
-
-});
-
-document.getElementById('horizontal').addEventListener('click', () => {
-    // 현재 rotation 값을 새 객체에 저장
-    const durationTime = 3000
-    const rotationX = { x: scene.rotation.x };
-    const rotationY = { y: scene.rotation.y };
-    const positionY = { y: scene.position.y };
-
-    const currentPos = { z: imgSpriteZpos };
-
-    new TWEEN.Tween(rotationX)
-        .to({ x: -1.25 }, durationTime) 
-        .easing(TWEEN.Easing.Quadratic.Out)
-        .onUpdate(() => {
-            scene.rotation.x = rotationX.x;
-        })
-        .start();
-    new TWEEN.Tween(rotationY)
-        .to({ y: 0 }, durationTime) 
-        .easing(TWEEN.Easing.Quadratic.Out)
-        .onUpdate(() => {
-            scene.rotation.y = rotationY.y;
-        })
-        .start();
-    new TWEEN.Tween(positionY)
-        .to({ y: 50 }, durationTime)
-        .easing(TWEEN.Easing.Quadratic.Out) 
-        .onUpdate(() => {
-            scene.position.y = positionY.y;
-        })
-        .start(); //
-
-    new TWEEN.Tween(currentPos)
-        .to({ z: 10}, durationTime)
-        .easing(TWEEN.Easing.Quadratic.Out)
-        .onUpdate(() => {
-            imgSpriteZpos = currentPos.z;
-            updateSprites();
-        })
-        .start(); // 애니메이션 시작
-
-});
-
-document.getElementById('vertical').addEventListener('click', () => {
-    // 현재 rotation 값을 새 객체에 저장
-    const durationTime = 3000; 
-    const rotationX = { x: scene.rotation.x };
-    const rotationY = { y: scene.rotation.y };
-    const positionY = { y: scene.position.y };
-
-    const currentPos = { z: imgSpriteZpos };
-
-
-    new TWEEN.Tween(rotationX)
-        .to({ x: 0 }, durationTime) 
-        .easing(TWEEN.Easing.Quadratic.Out)
-        .onUpdate(() => {
-            scene.rotation.x = rotationX.x;
-        })
-        .start();
-    new TWEEN.Tween(rotationY)
-        .to({ y: 1.2 }, durationTime) 
-        .easing(TWEEN.Easing.Quadratic.Out)
-        .onUpdate(() => {
-            scene.rotation.y = rotationY.y;
-        })
-        .start();
-    new TWEEN.Tween(positionY)
-        .to({ y: 0 }, durationTime)
-        .easing(TWEEN.Easing.Quadratic.Out) 
-        .onUpdate(() => {
-            scene.position.y = positionY.y;
-        })
-        .start(); //
-
-    new TWEEN.Tween(currentPos)
-        .to({ z: 7.5}, durationTime)
-        .easing(TWEEN.Easing.Quadratic.Out)
-        .onUpdate(() => {
-            imgSpriteZpos = currentPos.z;
-            updateSprites();
-        })
-        .start(); // 애니메이션 시작
-
-});
 
 document.getElementById('long').addEventListener('click', () => {
     // 현재 rotation 값을 새 객체에 저장
-    const durationTime = 3000; 
-    const rotationX = { x: scene.rotation.x };
-    const rotationY = { y: scene.rotation.y };
-    const positionY = { y: scene.position.y };
-
-    const imgZPosition = { z: imgSpriteZpos };
-
-    new TWEEN.Tween(rotationX)
-        .to({ x: 0 }, durationTime) 
-        .easing(TWEEN.Easing.Quadratic.Out)
-        .onUpdate(() => {
-            scene.rotation.x = rotationX.x;
-        })
-        .start();
-    new TWEEN.Tween(rotationY)
-        .to({ y: 0 }, durationTime) 
-        .easing(TWEEN.Easing.Quadratic.Out)
-        .onUpdate(() => {
-            scene.rotation.y = rotationY.y;
-        })
-        .start();
-    new TWEEN.Tween(positionY)
-        .to({ y: 0 }, durationTime)
-        .easing(TWEEN.Easing.Quadratic.Out) 
-        .onUpdate(() => {
-            scene.position.y = positionY.y;
-        })
-        .start(); //
-
-    new TWEEN.Tween(imgZPosition)
-        .to({ z: 5 }, durationTime)
-        .easing(TWEEN.Easing.Quadratic.Out)
-        .onUpdate(() => {
-            imgSpriteZpos = imgZPosition.z;
-            updateSprites();
-        })
-        .start();
 
     randomizeSpritePositions();
 });
 
 
 
-let originalPositions = new Map();
 
 function randomizeSpritePositions() {
     const durationTime = 6000;
@@ -305,13 +143,11 @@ function updateSprites() {
     render();
 }
 
-// Initialize and animate the scene
-init();
 
 function init() {
     // Scene setup
     camera = new THREE.PerspectiveCamera(15, window.innerWidth / window.innerHeight, 0.1, 100000);
-    camera.position.z = 2000;
+    camera.position.z = 500;
     scene = new THREE.Scene();
 
     scene.rotation.x = 0; 
@@ -328,17 +164,43 @@ function init() {
     document.body.appendChild(renderer.domElement);
     document.addEventListener('mousemove', onMouseMove, false);
     renderer.domElement.addEventListener('click', onSpriteClick, false);
+    
 
 
 
 
     // Load background texture
-    const loader = new THREE.TextureLoader();
-    loader.load('./sources/background1.0.png', texture => {
-        scene.background = texture;
-    }, undefined, err => {
-        console.error('An error happened setting the background.');
-    });
+    // const loader = new THREE.TextureLoader();
+    // loader.load('./sources/background1.0.png', texture => {
+    //     scene.background = texture;
+    // }, undefined, err => {
+    //     console.error('An error happened setting the background.');
+    // });
+
+    scene.background = new THREE.Color( 'black' );
+
+    // const loader2 = new THREE.TextureLoader();
+    // loader2.load('./sources/bgLogo.png', function(texture) {
+    //     // 텍스처 비율에 맞는 평면 기하체 생성
+    //     const aspectRatio = texture.image.width / texture.image.height;
+    //     const planeGeometry = new THREE.PlaneGeometry(aspectRatio, 1, 1, 1);
+
+    //     // 텍스처를 사용하는 재질 생성
+    //     const planeMaterial = new THREE.MeshBasicMaterial({ map: texture });
+
+    //     // 평면 메시 생성
+    //     const planeMesh = new THREE.Mesh(planeGeometry, planeMaterial);
+        
+    //     // 평면 메시 위치 및 크기 설정
+    //     planeMesh.position.set(0, 0, -1); // 카메라 뒤에 위치하도록 조정
+    //     planeMesh.scale.setScalar(window.innerHeight*0.75);  // 적절한 크기로 조정
+
+    //     // 씬에 평면 메시 추가
+    //     scene.add(planeMesh);
+    // }, undefined, err => {
+    //     console.error('An error happened setting the background.');
+    // });
+
 
     // Particles setup
     setupParticles();
@@ -373,9 +235,9 @@ function setupParticles() {
     const vertices = [];
     
 
-    const gridWidth = 128; // 가로 방향 입자 수
-    const gridHeight = 72; // 세로 방향 입자 수
-    const spacing = 18; // 입자 간 간격
+    const gridWidth = 128*2; // 가로 방향 입자 수
+    const gridHeight = 72*2; // 세로 방향 입자 수
+    const spacing = circleRadius; // 입자 간 간격
     const zPosition = 0; // 모든 입자의 Z 위치를 고정
     
     const offsetX = - ((gridWidth - 1) * spacing) / 2;
@@ -421,8 +283,8 @@ function setupParticles() {
     const colors = [];
 
     // 가로와 세로에 생성할 입자의 수
-    const particlesX = 128;
-    const particlesY = 72;
+    const particlesX = 128*2;
+    const particlesY = 72*2;
 
     // 각 축에 대한 간격 계산
     const stepX = image.width / particlesX;
@@ -488,45 +350,61 @@ function setupParticles() {
             const sprite = new THREE.Sprite(material);
             sprite.name = 'color';
             
+            const maxWidth = 20; // 최대 가로 너비
+            const maxHeight = maxWidth; // 최대 세로 너비
+            let width = img.width;
+            let height = img.height;
+            const aspectRatio = width / height;
 
-            // 스프라이트의 크기 설정
-            const imageAspect = texture.image.width / texture.image.height;
-            sprite.scale.x = 15 * imgScale; // 스프라이트의 가로 크기를 원하는 값으로 조정합니다.
-            sprite.scale.y = sprite.scale.x / imageAspect; // 비율에 맞게 세로 크기를 조정합니다.
+                    // 가로 너비가 최대치를 넘을 경우 조정
+            if (width > maxWidth) {
+                width = maxWidth;
+                height = width / aspectRatio;
+            }
+
+            // 세로 너비가 최대치를 넘을 경우 조정
+            if (height > maxHeight) {
+                height = maxHeight;
+                width = height * aspectRatio;
+            }
+
+            const imgStroke = 5
+            sprite.scale.set(width + imgStroke, height + imgStroke, 1);
             
             // 여기서 외곽선을 위한 두 번째 스프라이트를 만듭니다.
             const imgMaterial = new THREE.SpriteMaterial({
                 map : texture, // 외곽선의 색상을 설정합니다.
             });
             const imgSprite = new THREE.Sprite(imgMaterial);
-            imgSprite.scale.set(sprite.scale.x -3, sprite.scale.y-3 , 1); // 원본 스프라이트보다 약간 크게 설정
+            imgSprite.scale.set(width, height , 1); // 원본 스프라이트보다 약간 크게 설정
             imgSprite.name = 'img';
 
             sprite.userData.relatedSprite = imgSprite;
             imgSprite.userData.relatedSprite = sprite;
 
-            // Randomly choose a position for the image sprite
-            let positionIndex;
-            let tries = 0; // Add a safety to prevent infinite loops
-            do {
-                positionIndex = Math.floor(Math.random() * vertices.length / 3);
-                tries++;
-            } while (occupiedPositions[positionIndex] && tries < 1000);
+            const spriteGridWidth = 29;
+            const spriteGridHeight = 21;
+            const spriteSpacing = (maxWidth+imgStroke)*1.05;
 
-            // If a valid position is found, occupy it and add the sprite
-            if (!occupiedPositions[positionIndex]) {
-                occupiedPositions[positionIndex] = true;
-
-                sprite.position.x = vertices[positionIndex * 3] * imgSpriteXpos;
-                sprite.position.y = vertices[positionIndex * 3 + 1];
-                sprite.position.z = vertices[positionIndex * 3 + 2] + imgSpriteZpos;
-                imgSprite.position.set(sprite.position.x, sprite.position.y, sprite.position.z);
+            const gridX = index % spriteGridWidth; // 그리드의 x 위치
+            const gridY = Math.floor(index / spriteGridWidth); // 그리드의 y 위치
+    
+            if (gridY < spriteGridHeight) {
+                const x = offsetX + gridX * spriteSpacing + (spacing * gridWidth)/2 - (spriteSpacing*spriteGridWidth/2);
+                const y = offsetY + gridY * spriteSpacing + (spacing * gridHeight)/2 - (spriteSpacing*spriteGridHeight/2);
+                const z = ranNum(-5,5) + 100
+    
+                // 스프라이트의 위치 설정
+                sprite.position.set(x*1.25, -y, z);
+                imgSprite.position.set(x*1.25, -y, z);
 
                 scene.add(imgSprite);
                 scene.add(sprite);
 
                 imgSprites.push(imgSprite);
                 lineSprites.push(sprite);
+
+
             
             }
             
@@ -552,7 +430,7 @@ function setupParticles() {
                     const sprite = new THREE.Sprite(material);
                     sprite.name = 'circle';
                     sprite.position.set(x, -y, zPosition);
-                    sprite.scale.set(10, 10, 1);
+                    sprite.scale.set(circleRadius, circleRadius, 1);
                     scene.add(sprite);
 
                     circleSprites.push(sprite);
@@ -592,11 +470,16 @@ function createCircleTexture(radius, color) {
     return new THREE.CanvasTexture(canvas);
 }
 
+
+
 function onMouseMove(event) {
     // Calculate mouse position in normalized device coordinates (-1 to +1) for both components
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
 }
+
+
+
 
 function setupCameraControls() {
     controls = new OrbitControls(camera, renderer.domElement);
@@ -608,7 +491,7 @@ function setupCameraControls() {
     controls.mouseButtons = {
         LEFT: THREE.MOUSE.PAN,
         MIDDLE: THREE.MOUSE.DOLLY,
-        RIGHT: null // 오른쪽 클릭을 비활성화합니다.
+        RIGHT: THREE.MOUSE.PAN // 오른쪽 클릭을 비활성화합니다.
     };
 }
 
@@ -636,7 +519,7 @@ function onSpriteClick(event) {
             const finalCameraPosition = {
                 x: targetWorldPosition.x,
                 y: targetWorldPosition.y,
-                z: targetWorldPosition.z + 1000 // 카메라를 적절히 뒤로 배치합니다.
+                z: targetWorldPosition.z + 500 // 카메라를 적절히 뒤로 배치합니다.
             };
 
 
@@ -660,6 +543,7 @@ function onSpriteClick(event) {
     }
 }
 
+
 function onWindowResize() {
     // Adjust camera and renderer on window resize
     camera.aspect = window.innerWidth / window.innerHeight;
@@ -667,7 +551,31 @@ function onWindowResize() {
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
-function startScaleUp(object, scaleFactor = 2) {
+function clampCameraZ(camera, minZ, maxZ) {
+    camera.position.z = Math.max(minZ, Math.min(maxZ, camera.position.z));
+}
+
+function updateCircleSpriteSizes() {
+    const minZ = 1000; // 카메라 z 최소값
+    const maxZ = 2500; // 카메라 z 최대값
+
+    circleSprites.forEach(sprite => {
+        let scale;
+        if (camera.position.z <= minZ) {
+            scale = circleRadius;
+        } else if (camera.position.z >= maxZ) {
+            scale = 0;
+        } else {
+            // 카메라 z 값이 minZ와 maxZ 사이일 때 선형적으로 감소
+            scale = circleRadius * (1 - (camera.position.z - minZ) / (maxZ - minZ));
+        }
+        
+        sprite.scale.set(scale, scale, 1);
+    });
+}
+
+
+function startScaleUp(object, scaleFactor = 0.1) {
     if (!object.userData.isScalingUp && !object.userData.isScalingDown) {
       object.userData.isScalingUp = true;
       object.userData.scaleStartTime = Date.now();
@@ -677,7 +585,6 @@ function startScaleUp(object, scaleFactor = 2) {
       object.userData.scaleFactor = scaleFactor; // 여기에 scaleFactor를 저장합니다.
     }
 }
-
 
 function update() {
     const currentTime = Date.now();
@@ -709,7 +616,9 @@ function update() {
 }
 
 function animate() {
+
     requestAnimationFrame(animate);
+    
 
     // Update the raycaster with the camera and mouse position
     raycaster.setFromCamera(mouse, camera);
@@ -717,33 +626,36 @@ function animate() {
     // Calculate objects intersecting the picking ray
     const intersects = raycaster.intersectObjects(scene.children, true);
 
-    if (intersects.length > 0) {
-        // Check if the name of the intersected object is 'circle'
-        if (intersects[0].object.name === 'circle') {
-            const intersectedObject = intersects[0].object;
-            if (!intersectedObject.userData.isScalingUp && !intersectedObject.userData.isScalingDown) {
-                // Start scaling up only if not already scaling up or down
-                startScaleUp(intersectedObject);
-            }
-        }
-    }
+    // if (intersects.length > 0) {
+    //     // Check if the name of the intersected object is 'circle'
+    //     if (intersects[0].object.name === 'circle') {
+    //         const intersectedObject = intersects[0].object;
+    //         if (!intersectedObject.userData.isScalingUp && !intersectedObject.userData.isScalingDown) {
+    //             // Start scaling up only if not already scaling up or down
+    //             startScaleUp(intersectedObject);
+    //         }
+    //     }
+    // }
 
     if (intersects.length > 0) {
         const intersectedObject = intersects[0].object;
         if (intersectedObject.name === 'color' || intersectedObject.name === 'img') {
             if (!intersectedObject.userData.isScalingUp && !intersectedObject.userData.isScalingDown) {
                 // Start scaling up only if not already scaling up or down
-                startScaleUp(intersectedObject, 3);
+                startScaleUp(intersectedObject, 1.25);
                 if (intersectedObject.userData.relatedSprite) {
-                    startScaleUp(intersectedObject.userData.relatedSprite, 3);
+                    startScaleUp(intersectedObject.userData.relatedSprite, 1.25);
                 }
             }
         }
     }
-    
+    updateCircleSpriteSizes();
+
+    clampCameraZ(camera, -1000, 3000); 
     TWEEN.update()
     update();
     render();
+    
 }
 
 function render() {

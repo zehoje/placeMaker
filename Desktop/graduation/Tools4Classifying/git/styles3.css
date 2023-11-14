@@ -18,36 +18,9 @@ body, html {
 }
 
 
-#plane {
-  position: absolute; /* 절대 위치 */
-  top: 60px; /* 상단에서 50% 떨어진 위치 */
-  left: 60px; /* 좌측에서 50% 떨어진 위치 */
-  width: 60px;
-  transform: translate(-50%, -50%); /* 버튼의 중심을 정확히 중앙에 위치시킴 */
-  font-size: 16px; /* 텍스트 크기 */
-  cursor: pointer; /* 마우스 오버 시 커서 변경 */
-}
-#horizontal {
-  position: absolute; /* 절대 위치 */
-  top: 130px; /* 상단에서 50% 떨어진 위치 */
-  left: 60px; /* 좌측에서 50% 떨어진 위치 */
-  width: 60px;
-  transform: translate(-50%, -50%); /* 버튼의 중심을 정확히 중앙에 위치시킴 */
-  font-size: 16px; /* 텍스트 크기 */
-  cursor: pointer; /* 마우스 오버 시 커서 변경 */
-}
-#vertical {
-  position: absolute; /* 절대 위치 */
-  top: 200px; /* 상단에서 50% 떨어진 위치 */
-  left: 60px; /* 좌측에서 50% 떨어진 위치 */
-  width: 60px;
-  transform: translate(-50%, -50%); /* 버튼의 중심을 정확히 중앙에 위치시킴 */
-  font-size: 16px; /* 텍스트 크기 */
-  cursor: pointer; /* 마우스 오버 시 커서 변경 */
-}
 #long {
   position: absolute; /* 절대 위치 */
-  top: 270px; /* 상단에서 50% 떨어진 위치 */
+  top: 60px; /* 상단에서 50% 떨어진 위치 */
   left: 60px; /* 좌측에서 50% 떨어진 위치 */
   width: 60px;
   transform: translate(-50%, -50%); /* 버튼의 중심을 정확히 중앙에 위치시킴 */
