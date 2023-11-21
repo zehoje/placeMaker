@@ -466,7 +466,7 @@ function setupParticles() {
         }
 
         const pointsGeometry = new THREE.BufferGeometry();
-        pointsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+        pointsGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices), 3).setUsage(THREE.DynamicDrawUsage));
         pointsGeometry.setAttribute('color', new THREE.Float32BufferAttribute(pointColors, 3)); // 색상 데이터 설정
 
         const pointsMaterial = new THREE.PointsMaterial({
