@@ -17,7 +17,8 @@ for (let i = 1; i <= 29*21; i++) {
 
 const colorThief = new ColorThief();
 
-let circleRadius = 4.5;
+let circleRadius = 34;
+let radiusFactor = 0.135;
 
 let imgSpriteXpos = 1;
 let imgSpriteZpos = 5;
@@ -33,7 +34,7 @@ const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 
 const scaleUpDuration = 150;
-const scaleDownDuration = 6000;
+const scaleDownDuration = 3000;
 
 let originalPositions = new Map();
 
@@ -48,106 +49,140 @@ function ranNum(min, max) {
 }
 
 
-document.getElementById('long').addEventListener('click', () => {
-    // 현재 rotation 값을 새 객체에 저장
-
+function handleLongClick() {
     randomizeSpritePositions();
-});
+    randomizePointsPositions();
 
+    // 'long' ID가 가진 이벤트 핸들러를 잠시 제거
+    const longButton = document.getElementById('long');
+    longButton.removeEventListener('click', handleLongClick);
 
+    // 5초 후에 다시 이벤트 핸들러 추가
+    setTimeout(() => {
+        longButton.addEventListener('click', handleLongClick);
+    }, 6000);
+}
 
+// 최초 이벤트 핸들러 설정
+document.getElementById('long').addEventListener('click', handleLongClick);
 
-function randomizeSpritePositions() {
-    const durationTime = 6000;
+let pointsAnimationData = []; // 각 포인트의 애니메이션 데이터를 저장하는 배열
+let isAnimating = false; // 애니메이션 진행 중인지 여부
 
-    // imgSprite와 lineSprite의 이동을 동기화하기 위한 함수
-    const moveSpriteToNewPosition = (sprite, newPosX, newPosZ) => {
-        new TWEEN.Tween(sprite.position)
-            .to({ x: newPosX, z: newPosZ }, durationTime) // durationTime 동안 이동
-            .easing(TWEEN.Easing.Quadratic.Out) // 이동 시 부드럽게 처리
-            .start();
+function initializePointsAnimationData(points) {
+    const positions = points.geometry.attributes.position;
+    for (let i = 0; i < positions.count; i++) {
+        pointsAnimationData.push({
+            originalPosition: new THREE.Vector3(positions.getX(i), positions.getY(i), positions.getZ(i)),
+            targetPosition: new THREE.Vector3(),
+            isMoving: false,
+            atOriginalPosition: true // 초기값을 true로 설정
+        });
+    }
+}
 
-        if (sprite.userData.relatedSprite) {
-            // 연관된 스프라이트도 동일한 위치로 이동
-            new TWEEN.Tween(sprite.userData.relatedSprite.position)
-                .to({ x: newPosX, z: newPosZ }, durationTime)
-                .easing(TWEEN.Easing.Quadratic.Out)
-                .start();
-        }
-    };
+function randomizePointsPositions() {
+    const points = scene.getObjectByName('circlePoints');
+    if (points && pointsAnimationData.length === 0) {
+        initializePointsAnimationData(points);
+    }
 
-    circleSprites.forEach(sprite => {
-        if (!originalPositions.has(sprite)) {
-            // 스프라이트의 초기 위치를 저장
-            originalPositions.set(sprite, { x: sprite.position.x, z: sprite.position.z });
-        }
+    isAnimating = true;
 
-        // 스프라이트의 현재 위치가 원래 위치인지 확인
-        const originalPos = originalPositions.get(sprite);
-        if (sprite.position.x === originalPos.x && sprite.position.z === originalPos.z) {
-            // 새로운 랜덤 위치 계산
-            const newPosX = originalPos.x + ranNum(-5000, 5000); // 랜덤 범위 설정
-            const newPosZ = originalPos.z + ranNum(-1000,1000);
-
-            // TWEEN 애니메이션을 생성하고 시작합니다.
-            new TWEEN.Tween(sprite.position)
-                .to({ x: newPosX, z: newPosZ }, durationTime) // 2000ms 동안 이동
-                .easing(TWEEN.Easing.Quadratic.Out) // 이동 시 부드럽게 처리
-                .start();
-        } else {
-            // 원래 위치로 복귀
-            new TWEEN.Tween(sprite.position)
-                .to({ x: originalPos.x, z: originalPos.z }, durationTime) // 2000ms 동안 이동
-                .easing(TWEEN.Easing.Quadratic.Out) // 이동 시 부드럽게 처리
-                .start();
+    pointsAnimationData.forEach(data => {
+        if (!data.isMoving) {
+            if (data.atOriginalPosition) {
+                data.targetPosition.set(
+                    data.originalPosition.x + ranNum(-5000, 5000),
+                    data.originalPosition.y,
+                    data.originalPosition.z + ranNum(-1000, 1000)
+                );
+                data.atOriginalPosition = false;
+            } else {
+                data.targetPosition.copy(data.originalPosition);
+                data.atOriginalPosition = true;
+            }
+            data.isMoving = true;
         }
     });
+}
 
-    // 모든 lineSprite에 대해 처리
+function updatePointsAnimation() {
+    const points = scene.getObjectByName('circlePoints');
+    if (points && isAnimating) {
+        const positions = points.geometry.attributes.position;
+
+        let allPointsArrived = true;
+
+        pointsAnimationData.forEach((data, i) => {
+            if (data.isMoving) {
+                const currentPos = new THREE.Vector3(positions.getX(i), positions.getY(i), positions.getZ(i));
+                currentPos.lerp(data.targetPosition, 0.032); // 부드럽게 이동
+
+                if (currentPos.distanceTo(data.targetPosition) < 0.1) {
+                    currentPos.copy(data.targetPosition); // 목표 위치 도달
+                    data.isMoving = false;
+                } else {
+                    allPointsArrived = false;
+                }
+
+                positions.setXYZ(i, currentPos.x, currentPos.y, currentPos.z);
+            }
+        });
+
+        positions.needsUpdate = true;
+
+        if (allPointsArrived) {
+            isAnimating = false; // 모든 포인트가 목표 위치에 도달했을 경우 애니메이션 종료
+        }
+    }
+}
+
+let isSpritesRandomized = false; // 스프라이트가 랜덤 위치에 있는지 여부를 추적하는 플래그
+
+function randomizeSpritePositions() {
+    const durationTime = 5000;
+
     lineSprites.forEach(sprite => {
         if (!originalPositions.has(sprite)) {
             // 스프라이트의 초기 위치를 저장
             originalPositions.set(sprite, { x: sprite.position.x, z: sprite.position.z });
         }
 
-        // 스프라이트의 현재 위치가 원래 위치인지 확인
         const originalPos = originalPositions.get(sprite);
-        if (sprite.position.x === originalPos.x && sprite.position.z === originalPos.z) {
-            // 새로운 랜덤 위치 계산
-            const newPosX = originalPos.x * 5 + ranNum(-10, 10);
-            const newPosZ = originalPos.z + ranNum(-1000, 1000);
+        let newPosX, newPosZ;
 
-            // 랜덤 위치로 이동
-            moveSpriteToNewPosition(sprite, newPosX, newPosZ);
+        if (!isSpritesRandomized) {
+            // 새로운 랜덤 위치 계산
+            newPosX = originalPos.x * 5 + ranNum(-10, 10);
+            newPosZ = originalPos.z + ranNum(-1000, 1000);
         } else {
             // 원래 위치로 복귀
-            moveSpriteToNewPosition(sprite, originalPos.x, originalPos.z);
+            newPosX = originalPos.x;
+            newPosZ = originalPos.z;
+        }
+
+        // 스프라이트 이동
+        new TWEEN.Tween(sprite.position)
+            .to({ x: newPosX, z: newPosZ }, durationTime)
+            .easing(TWEEN.Easing.Quadratic.Out)
+            .start();
+
+        if (sprite.userData.relatedSprite) {
+            new TWEEN.Tween(sprite.userData.relatedSprite.position)
+                .to({ x: newPosX, z: newPosZ }, durationTime)
+                .easing(TWEEN.Easing.Quadratic.Out)
+                .start();
         }
     });
+
+    isSpritesRandomized = !isSpritesRandomized; // 플래그 토글
 }
-
-
-
-function updateSprites() {
-    // img 스프라이트들을 찾아서 위치를 업데이트하는 로직
-    scene.children.forEach(child => {
-        if (child.name === 'img') {
-            child.position.z = imgSpriteZpos; 
-        }
-        if (child.name === 'color') {
-            child.position.z = imgSpriteZpos; 
-        }
-        
-    });
-    // 렌더링이 필요하면 렌더 함수를 호출
-    render();
-}
-
 
 function init() {
     // Scene setup
     camera = new THREE.PerspectiveCamera(15, window.innerWidth / window.innerHeight, 0.1, 100000);
-    camera.position.z = 500;
+    camera.position.z = 3000;
     scene = new THREE.Scene();
 
     scene.rotation.x = 0; 
@@ -159,7 +194,7 @@ function init() {
 
 
     
-    renderer = new THREE.WebGLRenderer();
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
     document.addEventListener('mousemove', onMouseMove, false);
@@ -225,19 +260,18 @@ function init() {
     // document.body.appendChild(stats.dom);
 
     // Event listeners
-    window.addEventListener('resize', onWindowResize);
     animate();
 }
 
 function setupParticles() {
-    const circleTexture = createCircleTexture(256, 'white', 256); // 반지름이 64px인 흰색 원
+    const circleTexture = createCircleTexture(256, 'white'); // 반지름이 64px인 흰색 원
     const geometry = new THREE.BufferGeometry();
     const vertices = [];
     
 
     const gridWidth = 128*2; // 가로 방향 입자 수
     const gridHeight = 72*2; // 세로 방향 입자 수
-    const spacing = circleRadius; // 입자 간 간격
+    const spacing = 34 * radiusFactor; // 입자 간 간격
     const zPosition = 0; // 모든 입자의 Z 위치를 고정
     
     const offsetX = - ((gridWidth - 1) * spacing) / 2;
@@ -334,7 +368,6 @@ function setupParticles() {
             colors.push(color.r, color.g, color.b);
         }
     }
-    // 여기서부터 기존의 입자 생성 코드를 사용하고, colors 배열을 geometry에 할당
     geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
 
     let occupiedPositions = {}; 
@@ -410,36 +443,47 @@ function setupParticles() {
             
         });
 
+        // 각 포인트의 색상을 저장할 배열
+        const pointColors = [];
+
         for (let i = 0; i < gridHeight; i++) {
             for (let j = 0; j < gridWidth; j++) {
                 const positionIndex = i * gridWidth + j;
-    
-                // Only create a circle sprite if the position is not occupied
-                if (!occupiedPositions[positionIndex]) {
 
+                if (!occupiedPositions[positionIndex]) {
                     const x = offsetX + j * spacing;
                     const y = offsetY + i * spacing;
+                    const z = zPosition;
+
+                    // 위치 데이터 추가
+                    vertices.push(x, -y, z);
+
+                    // 색상 데이터 추가
                     const color = new THREE.Color(colors[positionIndex * 3], colors[positionIndex * 3 + 1], colors[positionIndex * 3 + 2]);
-    
-                    const material = new THREE.SpriteMaterial({
-                        color: color,
-                        map: circleTexture,
-                        transparent: true
-                    });
-
-                    const sprite = new THREE.Sprite(material);
-                    sprite.name = 'circle';
-                    sprite.position.set(x, -y, zPosition);
-                    sprite.scale.set(circleRadius, circleRadius, 1);
-                    scene.add(sprite);
-
-                    circleSprites.push(sprite);
-                    
+                    pointColors.push(color.r, color.g, color.b);
                 }
             }
-            
         }
-        
+
+        const pointsGeometry = new THREE.BufferGeometry();
+        pointsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+        pointsGeometry.setAttribute('color', new THREE.Float32BufferAttribute(pointColors, 3)); // 색상 데이터 설정
+
+        const pointsMaterial = new THREE.PointsMaterial({
+            size: circleRadius,
+            map: circleTexture,
+            transparent: true,
+            depthWrite: false,
+            depthTest: false,
+            blending: THREE.AdditiveBlending  ,
+            vertexColors: true
+        });
+
+
+        const points = new THREE.Points(pointsGeometry, pointsMaterial);
+        points.name = 'circlePoints';
+
+        scene.add(points);        
     });
     
 
@@ -544,36 +588,47 @@ function onSpriteClick(event) {
 }
 
 
-function onWindowResize() {
-    // Adjust camera and renderer on window resize
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-}
-
 function clampCameraZ(camera, minZ, maxZ) {
     camera.position.z = Math.max(minZ, Math.min(maxZ, camera.position.z));
 }
 
 function updateCircleSpriteSizes() {
-    const minZ = 1000; // 카메라 z 최소값
-    const maxZ = 2500; // 카메라 z 최대값
+    const minZ = 1000;
+    const maxZ = 2500;
+    let size;
+    if (camera.position.z <= minZ) {
+        size = circleRadius;
+    } else if (camera.position.z >= maxZ) {
+        size = 0;
+    } else {
+        size = circleRadius * (1 - (camera.position.z - minZ) / (maxZ - minZ));
+    }
 
-    circleSprites.forEach(sprite => {
-        let scale;
-        if (camera.position.z <= minZ) {
-            scale = circleRadius;
-        } else if (camera.position.z >= maxZ) {
-            scale = 0;
-        } else {
-            // 카메라 z 값이 minZ와 maxZ 사이일 때 선형적으로 감소
-            scale = circleRadius * (1 - (camera.position.z - minZ) / (maxZ - minZ));
-        }
-        
-        sprite.scale.set(scale, scale, 1);
-    });
+    const points = scene.getObjectByName('circlePoints');
+    if (points) {
+        points.material.size = size;
+        points.material.needsUpdate = true;
+    }
 }
 
+function updateBackgroundColor() {
+    const minZ = 1000; // 카메라 Z 위치의 최소값
+    const maxZ = 2500;  // 카메라 Z 위치의 최대값
+    const colorWhite = new THREE.Color('white');
+    const colorBlack = new THREE.Color('black');
+
+    let colorFactor;
+    if (camera.position.z <= minZ) {
+        colorFactor = 1;
+    } else if (camera.position.z >= maxZ) {
+        colorFactor = 0.05;
+    } else {
+        colorFactor = (1 - (camera.position.z - minZ) / (maxZ - minZ));
+    }
+
+    const currentColor = colorWhite.clone().lerp(colorBlack, colorFactor);
+    scene.background = currentColor;
+}
 
 function startScaleUp(object, scaleFactor = 0.1) {
     if (!object.userData.isScalingUp && !object.userData.isScalingDown) {
@@ -620,36 +675,26 @@ function animate() {
     requestAnimationFrame(animate);
     
 
-    // Update the raycaster with the camera and mouse position
     raycaster.setFromCamera(mouse, camera);
 
-    // Calculate objects intersecting the picking ray
     const intersects = raycaster.intersectObjects(scene.children, true);
 
-    // if (intersects.length > 0) {
-    //     // Check if the name of the intersected object is 'circle'
-    //     if (intersects[0].object.name === 'circle') {
-    //         const intersectedObject = intersects[0].object;
-    //         if (!intersectedObject.userData.isScalingUp && !intersectedObject.userData.isScalingDown) {
-    //             // Start scaling up only if not already scaling up or down
-    //             startScaleUp(intersectedObject);
-    //         }
-    //     }
-    // }
 
     if (intersects.length > 0) {
         const intersectedObject = intersects[0].object;
         if (intersectedObject.name === 'color' || intersectedObject.name === 'img') {
             if (!intersectedObject.userData.isScalingUp && !intersectedObject.userData.isScalingDown) {
                 // Start scaling up only if not already scaling up or down
-                startScaleUp(intersectedObject, 1.25);
+                startScaleUp(intersectedObject, 1.5);
                 if (intersectedObject.userData.relatedSprite) {
-                    startScaleUp(intersectedObject.userData.relatedSprite, 1.25);
+                    startScaleUp(intersectedObject.userData.relatedSprite, 1.5);
                 }
             }
         }
     }
     updateCircleSpriteSizes();
+    updatePointsAnimation();
+    updateBackgroundColor(); 
 
     clampCameraZ(camera, -1000, 3000); 
     TWEEN.update()
