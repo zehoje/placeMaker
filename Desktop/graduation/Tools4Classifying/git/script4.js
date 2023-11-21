@@ -264,7 +264,7 @@ function init() {
 }
 
 function setupParticles() {
-    const circleTexture = createCircleTexture(256, 'white'); // 반지름이 64px인 흰색 원
+    const circleTexture = createCircleTexture(16, 'white'); // 반지름이 64px인 흰색 원
     const geometry = new THREE.BufferGeometry();
     const vertices = [];
     
