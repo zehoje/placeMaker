@@ -269,8 +269,8 @@ function setupParticles() {
     const vertices = [];
     
 
-    const gridWidth = 128*2; // 가로 방향 입자 수
-    const gridHeight = 72*2; // 세로 방향 입자 수
+    const gridWidth = 256; // 가로 방향 입자 수
+    const gridHeight = 144; // 세로 방향 입자 수
     const spacing = 34 * radiusFactor; // 입자 간 간격
     const zPosition = 0; // 모든 입자의 Z 위치를 고정
     
@@ -317,8 +317,8 @@ function setupParticles() {
     const colors = [];
 
     // 가로와 세로에 생성할 입자의 수
-    const particlesX = 128*2;
-    const particlesY = 72*2;
+    const particlesX = 256;
+    const particlesY = 144;
 
     // 각 축에 대한 간격 계산
     const stepX = image.width / particlesX;
