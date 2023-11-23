@@ -20,15 +20,8 @@ const colorThief = new ColorThief();
 let circleRadius = 34;
 let radiusFactor = 0.135;
 
-let imgSpriteXpos = 1;
-let imgSpriteZpos = 5;
-const circleSprites = [];
 const imgSprites = [];
 const lineSprites = [];
-
-
-let imgScale = 3;
-
 
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
@@ -37,8 +30,6 @@ const scaleUpDuration = 150;
 const scaleDownDuration = 3000;
 
 let originalPositions = new Map();
-
-
 
 
 init();
@@ -93,7 +84,7 @@ function randomizePointsPositions() {
         if (!data.isMoving) {
             if (data.atOriginalPosition) {
                 data.targetPosition.set(
-                    data.originalPosition.x + ranNum(-5000, 5000),
+                    data.originalPosition.x + ranNum(-2500, 2500),
                     data.originalPosition.y,
                     data.originalPosition.z + ranNum(-1000, 1000)
                 );
@@ -179,6 +170,7 @@ function randomizeSpritePositions() {
     isSpritesRandomized = !isSpritesRandomized; // 플래그 토글
 }
 
+
 function init() {
     // Scene setup
     camera = new THREE.PerspectiveCamera(15, window.innerWidth / window.innerHeight, 0.1, 100000);
@@ -191,80 +183,29 @@ function init() {
     scene.position.x = 0; 
     scene.position.y = 0;
     scene.position.z = 0;
-
-
     
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
     document.addEventListener('mousemove', onMouseMove, false);
     renderer.domElement.addEventListener('click', onSpriteClick, false);
-    
-
-
-
-
-    // Load background texture
-    // const loader = new THREE.TextureLoader();
-    // loader.load('./sources/background1.0.png', texture => {
-    //     scene.background = texture;
-    // }, undefined, err => {
-    //     console.error('An error happened setting the background.');
-    // });
 
     scene.background = new THREE.Color( 'black' );
 
-    // const loader2 = new THREE.TextureLoader();
-    // loader2.load('./sources/bgLogo.png', function(texture) {
-    //     // 텍스처 비율에 맞는 평면 기하체 생성
-    //     const aspectRatio = texture.image.width / texture.image.height;
-    //     const planeGeometry = new THREE.PlaneGeometry(aspectRatio, 1, 1, 1);
-
-    //     // 텍스처를 사용하는 재질 생성
-    //     const planeMaterial = new THREE.MeshBasicMaterial({ map: texture });
-
-    //     // 평면 메시 생성
-    //     const planeMesh = new THREE.Mesh(planeGeometry, planeMaterial);
-        
-    //     // 평면 메시 위치 및 크기 설정
-    //     planeMesh.position.set(0, 0, -1); // 카메라 뒤에 위치하도록 조정
-    //     planeMesh.scale.setScalar(window.innerHeight*0.75);  // 적절한 크기로 조정
-
-    //     // 씬에 평면 메시 추가
-    //     scene.add(planeMesh);
-    // }, undefined, err => {
-    //     console.error('An error happened setting the background.');
-    // });
-
-
-    // Particles setup
     setupParticles();
-    
-
-    // Camera controls
     setupCameraControls();
 
-    // Setup EffectComposer with the passes
     composer = new EffectComposer(renderer);
     const renderPass = new RenderPass(scene, camera);
     composer.addPass(renderPass);
 
-    
-    // Outline pass for highlighting objects
     outlinePass = new OutlinePass(new THREE.Vector2(window.innerWidth, window.innerHeight), scene, camera);
     composer.addPass(outlinePass);
-
-
-    // // Performance monitor
-    // stats = new Stats();
-    // document.body.appendChild(stats.dom);
-
-    // Event listeners
     animate();
 }
 
 function setupParticles() {
-    const circleTexture = createCircleTexture(16, 'white'); // 반지름이 64px인 흰색 원
+    const circleTexture = createCircleTexture(64, 'white'); // 반지름이 64px인 흰색 원
     const geometry = new THREE.BufferGeometry();
     const vertices = [];
     
@@ -276,15 +217,6 @@ function setupParticles() {
     
     const offsetX = - ((gridWidth - 1) * spacing) / 2;
     const offsetY = - ((gridHeight - 1) * spacing) / 2;
-
-    for (let i = 0; i < gridHeight; i++) {
-        for (let j = 0; j < gridWidth; j++) {
-            const x = offsetX + j * spacing;
-            const y = offsetY + i * spacing;
-            const z = zPosition; // 모든 입자의 Z 위치를 고정
-            vertices.push(x, -y, z);
-        }
-    }
 
     // 이미지 로더 초기화
     const loader = new THREE.TextureLoader();
@@ -316,17 +248,13 @@ function setupParticles() {
     // 색상 배열 생성
     const colors = [];
 
-    // 가로와 세로에 생성할 입자의 수
-    const particlesX = 256;
-    const particlesY = 144;
-
     // 각 축에 대한 간격 계산
-    const stepX = image.width / particlesX;
-    const stepY = image.height / particlesY;
+    const stepX = image.width / gridWidth;
+    const stepY = image.height / gridHeight;
 
     // 그리드 형식으로 색상을 추출
-    for (let i = 0; i < particlesY; i++) {
-        for (let j = 0; j < particlesX; j++) {
+    for (let i = 0; i < gridHeight; i++) {
+        for (let j = 0; j < gridWidth; j++) {
             let colorCounts = {};
 
             const startY = Math.floor(i * stepY);
@@ -368,9 +296,6 @@ function setupParticles() {
             colors.push(color.r, color.g, color.b);
         }
     }
-    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-
-    let occupiedPositions = {}; 
 
     Promise.all(textures).then((loadedTextures) => {
         loadedTextures.forEach((texture, index) => {           
@@ -436,11 +361,7 @@ function setupParticles() {
 
                 imgSprites.push(imgSprite);
                 lineSprites.push(sprite);
-
-
-            
-            }
-            
+            }           
         });
 
         // 각 포인트의 색상을 저장할 배열
@@ -450,40 +371,36 @@ function setupParticles() {
             for (let j = 0; j < gridWidth; j++) {
                 const positionIndex = i * gridWidth + j;
 
-                if (!occupiedPositions[positionIndex]) {
-                    const x = offsetX + j * spacing;
-                    const y = offsetY + i * spacing;
-                    const z = zPosition;
+                const x = offsetX + j * spacing;
+                const y = offsetY + i * spacing;
+                const z = zPosition;
 
-                    // 위치 데이터 추가
-                    vertices.push(x, -y, z);
+                // 위치 데이터 추가
+                vertices.push(x, -y, z);
 
-                    // 색상 데이터 추가
-                    const color = new THREE.Color(colors[positionIndex * 3], colors[positionIndex * 3 + 1], colors[positionIndex * 3 + 2]);
-                    pointColors.push(color.r, color.g, color.b);
-                }
+                // 색상 데이터 추가
+                const color = new THREE.Color(colors[positionIndex * 3], colors[positionIndex * 3 + 1], colors[positionIndex * 3 + 2]);
+                pointColors.push(color.r, color.g, color.b);       
             }
         }
-
-        const pointsGeometry = new THREE.BufferGeometry();
-        pointsGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices), 3).setUsage(THREE.DynamicDrawUsage));
-        pointsGeometry.setAttribute('color', new THREE.Float32BufferAttribute(pointColors, 3)); // 색상 데이터 설정
+        geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices), 3).setUsage(THREE.DynamicDrawUsage));
+        geometry.setAttribute('color', new THREE.Float32BufferAttribute(pointColors, 3)); // 색상 데이터 설정
 
         const pointsMaterial = new THREE.PointsMaterial({
-            size: circleRadius,
             map: circleTexture,
             transparent: true,
             depthWrite: false,
             depthTest: false,
-            blending: THREE.AdditiveBlending  ,
             vertexColors: true
         });
 
+        const points = new THREE.Points(geometry, pointsMaterial);
+        points.frustumCulled = false;
 
-        const points = new THREE.Points(pointsGeometry, pointsMaterial);
         points.name = 'circlePoints';
 
-        scene.add(points);        
+        scene.add(points);     
+        console.log(vertices.length);    
     });
     
 
@@ -535,7 +452,7 @@ function setupCameraControls() {
     controls.mouseButtons = {
         LEFT: THREE.MOUSE.PAN,
         MIDDLE: THREE.MOUSE.DOLLY,
-        RIGHT: THREE.MOUSE.PAN // 오른쪽 클릭을 비활성화합니다.
+        RIGHT: THREE.MOUSE.ROTATE // PAN,DOLLY,ROTATE
     };
 }
 
@@ -673,12 +590,10 @@ function update() {
 function animate() {
 
     requestAnimationFrame(animate);
-    
 
     raycaster.setFromCamera(mouse, camera);
 
     const intersects = raycaster.intersectObjects(scene.children, true);
-
 
     if (intersects.length > 0) {
         const intersectedObject = intersects[0].object;
@@ -696,15 +611,12 @@ function animate() {
     updatePointsAnimation();
     updateBackgroundColor(); 
 
-    clampCameraZ(camera, -1000, 3000); 
+    // clampCameraZ(camera, -1000, 3000); 
     TWEEN.update()
     update();
     render();
-    
 }
 
 function render() {
     composer.render();
-    
-    // renderer.render(scene, camera);
 }
